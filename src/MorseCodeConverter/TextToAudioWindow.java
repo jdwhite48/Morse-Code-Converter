@@ -140,7 +140,7 @@ public class TextToAudioWindow extends javax.swing.JFrame {
 
         freqLabel.setText("Frequency (Hz):");
 
-        wpmSpinner.setModel(new javax.swing.SpinnerNumberModel(20, 1, null, 1));
+        wpmSpinner.setModel(new javax.swing.SpinnerNumberModel(20, 5, 60, 1));
         wpmSpinner.setMinimumSize(new java.awt.Dimension(31, 25));
         wpmSpinner.setPreferredSize(new java.awt.Dimension(71, 25));
 
@@ -287,8 +287,8 @@ public class TextToAudioWindow extends javax.swing.JFrame {
             boolean outputIsText = textPattern.matcher(output).find();
             if (!outputIsText) {
                 //Converts morse code string to audio, and outputs text as it plays
-                ProcessTextToAudioConversion pc = new ProcessTextToAudioConversion(output, this, convertButton, outputArea, mta);
-                pc.execute(); //Uses SwingWorker ProcessTextToAudioConversion to handle text output
+                TextToAudioProcessor pc = new TextToAudioProcessor(output, this, convertButton, outputArea, mta);
+                pc.execute(); //Uses SwingWorker TextToAudioProcessor to handle text output
             }
             else {
                 //Create error window if output isn't Morse code (shouldn't happen if toString works))

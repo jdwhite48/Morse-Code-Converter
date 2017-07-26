@@ -66,12 +66,12 @@ public class TextToAudio {
      * 
      * @param input the Morse code String
      * @param vol The volume (0 is muted, 1 standard?)
-     * @param pta The SwingWorker that handles outputting text to the text area
+     * @param ttap The SwingWorker that handles outputting text to the text area
      * @throws LineUnavailableException 
      * @throws java.lang.InterruptedException 
      * @throws MorseCodeConverter.InvalidTransmissionException 
      */
-    public void playAudio(String input, ProcessTextToAudioConversion pta) throws LineUnavailableException, InterruptedException, InvalidTransmissionException {
+    public void playAudio(String input, TextToAudioProcessor ttap) throws LineUnavailableException, InterruptedException, InvalidTransmissionException {
         String msg = "";
         Matcher msgMatcher = Pattern.compile("(.*[^.\\-])?(-\\.-\\.- (.*?) \\.\\.\\.-\\.-)").matcher(input);
         if (msgMatcher.find())
@@ -86,7 +86,7 @@ public class TextToAudio {
             
         char[] morseChars = msg.toCharArray();
         for (char c: morseChars) {
-            if (pta == null) {
+            if (ttap == null) {
                 switch (c) {
                     case '.':
                         System.out.print(".");
@@ -118,26 +118,26 @@ public class TextToAudio {
             else {
                 switch (c) {
                     case '.':
-                        pta.outputText(".");
+                        ttap.outputText(".");
                         PlaySoundUtils.tone(DOT_FREQ, dotLength, volume);
                         Thread.sleep(dotSpacing);
                         break;
                     case '-':
-                        pta.outputText("-");
+                        ttap.outputText("-");
                         PlaySoundUtils.tone(DOT_FREQ, dashLength, volume);
                         Thread.sleep(dotSpacing);
                         break;
                     case ' ':
-                        pta.outputText(" ");
+                        ttap.outputText(" ");
                         Thread.sleep(letterSpacing - dotSpacing);
                         //Because there's a space after every dot or dash, it has to be taken baack out
                         break;
                     case '|':
-                        pta.outputText("|");
+                        ttap.outputText("|");
                         Thread.sleep(wordSpacing - dotSpacing);
                         break;
                     case '/':
-                        pta.outputText("/");
+                        ttap.outputText("/");
                         Thread.sleep(wordSpacing - dotSpacing);
                         break;
                     default:

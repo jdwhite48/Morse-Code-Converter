@@ -1,12 +1,12 @@
 package MorseCodeConverter;
 
-import javax.sound.sampled.LineUnavailableException;
 import javax.swing.JOptionPane;
 
 /**
  *
  * TODO:
  * Pass toggle from English to Morse code output text from InputOutputGUI
+ * Wait until guessing is stopped before interpreting
  * 
  * 
  * @author Jacob White
@@ -14,8 +14,9 @@ import javax.swing.JOptionPane;
 public class AudioToTextWindow extends javax.swing.JFrame {
 
     public boolean isEnglishOutput = true;
-    private ProcessDotTime pc;
-    private AudioToMorse atm;
+    private WPMProcessor wpmp;
+    private AudioToTextProcessor attp;
+    private AudioToText att;
     /**
      * Creates new form AudioToTextWindow
      */
@@ -36,12 +37,12 @@ public class AudioToTextWindow extends javax.swing.JFrame {
         directions = new javax.swing.JTextArea();
         inputPanel = new javax.swing.JPanel();
         inputLabel = new javax.swing.JLabel();
-        startButton = new javax.swing.JButton();
-        stopButton = new javax.swing.JButton();
-        startButton2 = new javax.swing.JButton();
-        stopButton2 = new javax.swing.JButton();
+        startWPMGuessButton = new javax.swing.JButton();
+        stopWPMGuessButton = new javax.swing.JButton();
         durationLabel = new javax.swing.JLabel();
-        durationField = new javax.swing.JTextField();
+        startInterpretingButton = new javax.swing.JButton();
+        stopInterpretingButton = new javax.swing.JButton();
+        WPMSpinner = new javax.swing.JSpinner();
         outputPanel = new javax.swing.JPanel();
         outputLabel = new javax.swing.JLabel();
         jScrollPane3 = new javax.swing.JScrollPane();
@@ -60,7 +61,7 @@ public class AudioToTextWindow extends javax.swing.JFrame {
         directions.setFont(new java.awt.Font("Monospaced", 0, 18)); // NOI18N
         directions.setLineWrap(true);
         directions.setRows(5);
-        directions.setText("Press \"Start Recording\" to start recording Morse code audio. The program will listen for a starting and ending signal, and after you press \"Stop Recording\", it will find the message from within the audio input and output it as text.");
+        directions.setText("Enter a non-zero WPM value in order to convert audio to text (using Morse standard: 50 dots/word). If the WPM is unknown, press \"Start Guessing\" and play a sample at the same speed as the message (This will NOT be included in the final message). Then press \"Start Interpreting\" and play your message.");
         directions.setWrapStyleWord(true);
         directions.setFocusable(false);
         jScrollPane1.setViewportView(directions);
@@ -68,41 +69,39 @@ public class AudioToTextWindow extends javax.swing.JFrame {
         inputLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
         inputLabel.setText("Input:");
 
-        startButton.setText("Start Recording");
-        startButton.addActionListener(new java.awt.event.ActionListener() {
+        startWPMGuessButton.setText("Start Guessing");
+        startWPMGuessButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startButtonActionPerformed(evt);
+                startWPMGuessButtonActionPerformed(evt);
             }
         });
 
-        stopButton.setText("Stop Recording");
-        stopButton.setEnabled(false);
-        stopButton.addActionListener(new java.awt.event.ActionListener() {
+        stopWPMGuessButton.setText("Stop Guessing");
+        stopWPMGuessButton.setEnabled(false);
+        stopWPMGuessButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stopButtonActionPerformed(evt);
+                stopWPMGuessButtonActionPerformed(evt);
             }
         });
 
-        startButton2.setText("Start Interpreting");
-        startButton2.addActionListener(new java.awt.event.ActionListener() {
+        durationLabel.setText("WPM:");
+
+        startInterpretingButton.setText("Start Interpreting");
+        startInterpretingButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                startButton2ActionPerformed(evt);
+                startInterpretingButtonActionPerformed(evt);
             }
         });
 
-        stopButton2.setText("Stop Interpreting");
-        stopButton2.setEnabled(false);
-        stopButton2.addActionListener(new java.awt.event.ActionListener() {
+        stopInterpretingButton.setText("Stop Interpreting");
+        stopInterpretingButton.setEnabled(false);
+        stopInterpretingButton.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
-                stopButton2ActionPerformed(evt);
+                stopInterpretingButtonActionPerformed(evt);
             }
         });
 
-        durationLabel.setText("Noises Per Dot:");
-
-        durationField.setEditable(false);
-        durationField.setHorizontalAlignment(javax.swing.JTextField.CENTER);
-        durationField.setText("0");
+        WPMSpinner.setModel(new javax.swing.SpinnerNumberModel(0, 0, 100, 1));
 
         javax.swing.GroupLayout inputPanelLayout = new javax.swing.GroupLayout(inputPanel);
         inputPanel.setLayout(inputPanelLayout);
@@ -111,22 +110,20 @@ public class AudioToTextWindow extends javax.swing.JFrame {
             .addGroup(inputPanelLayout.createSequentialGroup()
                 .addContainerGap()
                 .addGroup(inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(inputLabel)
                     .addGroup(inputPanelLayout.createSequentialGroup()
-                        .addComponent(inputLabel)
-                        .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-                    .addGroup(inputPanelLayout.createSequentialGroup()
-                        .addComponent(startButton)
+                        .addComponent(startWPMGuessButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(stopButton)
+                        .addComponent(stopWPMGuessButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(durationLabel)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(durationField, javax.swing.GroupLayout.PREFERRED_SIZE, 34, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                        .addComponent(startButton2)
+                        .addComponent(WPMSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(inputPanelLayout.createSequentialGroup()
+                        .addComponent(startInterpretingButton)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(stopButton2)
-                        .addGap(134, 134, 134))))
+                        .addComponent(stopInterpretingButton)))
+                .addContainerGap(228, Short.MAX_VALUE))
         );
         inputPanelLayout.setVerticalGroup(
             inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -134,14 +131,15 @@ public class AudioToTextWindow extends javax.swing.JFrame {
                 .addComponent(inputLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                 .addGroup(inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                    .addComponent(startButton)
-                    .addComponent(stopButton)
-                    .addGroup(inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
-                        .addComponent(startButton2)
-                        .addComponent(stopButton2))
+                    .addComponent(startWPMGuessButton)
+                    .addComponent(stopWPMGuessButton)
                     .addComponent(durationLabel)
-                    .addComponent(durationField, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
-                .addGap(0, 43, Short.MAX_VALUE))
+                    .addComponent(WPMSpinner, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addGroup(inputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(startInterpretingButton)
+                    .addComponent(stopInterpretingButton))
+                .addGap(0, 13, Short.MAX_VALUE))
         );
 
         outputLabel.setFont(new java.awt.Font("Tahoma", 0, 18)); // NOI18N
@@ -174,10 +172,9 @@ public class AudioToTextWindow extends javax.swing.JFrame {
         outputPanelLayout.setVerticalGroup(
             outputPanelLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(outputPanelLayout.createSequentialGroup()
-                .addContainerGap()
                 .addComponent(outputLabel)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 158, Short.MAX_VALUE)
+                .addComponent(jScrollPane3, javax.swing.GroupLayout.DEFAULT_SIZE, 125, Short.MAX_VALUE)
                 .addContainerGap())
         );
 
@@ -187,15 +184,13 @@ public class AudioToTextWindow extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addComponent(inputPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
             .addComponent(outputPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-            .addGroup(layout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 780, Short.MAX_VALUE))
+            .addComponent(jScrollPane1, javax.swing.GroupLayout.Alignment.TRAILING)
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
-                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 131, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(18, 18, 18)
+                .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 180, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(inputPanel, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(outputPanel, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
@@ -204,30 +199,47 @@ public class AudioToTextWindow extends javax.swing.JFrame {
         pack();
     }// </editor-fold>//GEN-END:initComponents
 
-    private void startButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButtonActionPerformed
-        stopButton.setEnabled(true);
-        
-        atm = new AudioToMorse();
-        atm.setStopped(false);
-        //Start button disabled by SwingWorker pc until finished executing.
-        pc = new ProcessDotTime(this, startButton, durationField, atm);
-        pc.execute();
-    }//GEN-LAST:event_startButtonActionPerformed
+    private void startWPMGuessButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startWPMGuessButtonActionPerformed
+        startInterpretingButton.setEnabled(false); //Disable to prevent 2 simultaneous lines
+        if (att == null) {
+            att = new AudioToText();
+        }
+        att.setStopped(false);
+        //Start button disabled by SwingWorker wpmp until finished executing.
+        wpmp = new WPMProcessor(this, startWPMGuessButton, WPMSpinner, att);
+        wpmp.execute();
+        stopWPMGuessButton.setEnabled(true);
+    }//GEN-LAST:event_startWPMGuessButtonActionPerformed
 
-    private void stopButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopButtonActionPerformed
-        
-        atm.setStopped(true); //Stops the data collection
-        pc.setDuration(5);
-        stopButton.setEnabled(false);
-    }//GEN-LAST:event_stopButtonActionPerformed
+    private void stopWPMGuessButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopWPMGuessButtonActionPerformed
+        att.setStopped(true); //Stops the data collection
+        stopWPMGuessButton.setEnabled(false);
+        startInterpretingButton.setEnabled(true);
+    }//GEN-LAST:event_stopWPMGuessButtonActionPerformed
 
-    private void startButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startButton2ActionPerformed
-        stopButton2.setEnabled(true);
-    }//GEN-LAST:event_startButton2ActionPerformed
+    private void startInterpretingButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startInterpretingButtonActionPerformed
+        outputArea.setText(""); //Clear any previous text
+        if ((int)WPMSpinner.getValue() == 0) {
+            JOptionPane.showMessageDialog(this, "Must have a non-zero words-per-minute value. If the message speed in WPM is unknown,\nuse \"Start Guessing\" and play a sample to estimate it.", "Zero WPM Error", JOptionPane.ERROR_MESSAGE);
+        }
+        else {
+            startWPMGuessButton.setEnabled(false);//Disable to prevent 2 simultaneous lines
 
-    private void stopButton2ActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopButton2ActionPerformed
-        stopButton2.setEnabled(false);
-    }//GEN-LAST:event_stopButton2ActionPerformed
+            if (att == null) {
+                att = new AudioToText();
+            }
+            att.setStopped(false);
+            attp = new AudioToTextProcessor(this, startInterpretingButton, WPMSpinner, outputArea, att);
+            attp.execute(); 
+            stopInterpretingButton.setEnabled(true);
+        }
+    }//GEN-LAST:event_startInterpretingButtonActionPerformed
+
+    private void stopInterpretingButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopInterpretingButtonActionPerformed
+        att.setStopped(true);
+        stopInterpretingButton.setEnabled(false);
+        startWPMGuessButton.setEnabled(true);
+    }//GEN-LAST:event_stopInterpretingButtonActionPerformed
 
     public void setTextOutput(boolean isEnglishOutput) {
         this.isEnglishOutput = isEnglishOutput;
@@ -268,8 +280,8 @@ public class AudioToTextWindow extends javax.swing.JFrame {
     }
 
     // Variables declaration - do not modify//GEN-BEGIN:variables
+    private javax.swing.JSpinner WPMSpinner;
     private javax.swing.JTextArea directions;
-    private javax.swing.JTextField durationField;
     private javax.swing.JLabel durationLabel;
     private javax.swing.JLabel inputLabel;
     private javax.swing.JPanel inputPanel;
@@ -278,9 +290,9 @@ public class AudioToTextWindow extends javax.swing.JFrame {
     private javax.swing.JTextArea outputArea;
     private javax.swing.JLabel outputLabel;
     private javax.swing.JPanel outputPanel;
-    private javax.swing.JButton startButton;
-    private javax.swing.JButton startButton2;
-    private javax.swing.JButton stopButton;
-    private javax.swing.JButton stopButton2;
+    private javax.swing.JButton startInterpretingButton;
+    private javax.swing.JButton startWPMGuessButton;
+    private javax.swing.JButton stopInterpretingButton;
+    private javax.swing.JButton stopWPMGuessButton;
     // End of variables declaration//GEN-END:variables
 }
