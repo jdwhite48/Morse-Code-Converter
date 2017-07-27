@@ -65,7 +65,6 @@ public class TextToAudio {
      * NOTE: Input null for the SwingWorker parameter if outputting to Terminal
      * 
      * @param input the Morse code String
-     * @param vol The volume (0 is muted, 1 standard?)
      * @param ttap The SwingWorker that handles outputting text to the text area
      * @throws LineUnavailableException 
      * @throws java.lang.InterruptedException 

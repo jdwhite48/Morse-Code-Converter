@@ -152,13 +152,13 @@ public class AudioAnalysisBuffer {
         String morseMessage = "";
         String audioMessage = getNoiseList();
         //Split between the tones and the spaces
-        String[] tonesAndSpaces = audioMessage.split("(?<= )(?=\\.)|(?<=\\.)(?= )");
+        String[] tonesAndSpaces = audioMessage.split("((?<= )(?=\\.))|((?<=\\.)(?= ))");
         for (String s: tonesAndSpaces) {
             if (s.matches("\\.+")) { //If tone
                 if (Math.abs(s.length() - noisesPerDot*1) < TOLERANCE) {//If dot
                     morseMessage += ".";
                 }
-                else if (Math.abs(s.length() - noisesPerDot*3) < TOLERANCE) {//If dash
+                else if (Math.abs(s.length() - noisesPerDot*3) < 3*TOLERANCE) {//If dash
                     morseMessage += "-";
                 }
                 else {
@@ -166,13 +166,13 @@ public class AudioAnalysisBuffer {
                 }
             }
             else if (s.matches(" +")) { //If space
-                if (Math.abs(s.length() - noisesPerDot*1) < TOLERANCE) {//If tone space
+                if (Math.abs(s.length() - noisesPerDot*1) < 3*TOLERANCE) {//If tone space
                     morseMessage += "_";
                 }
-                else if (Math.abs(s.length() - noisesPerDot*3) < TOLERANCE) { //If letter space
+                else if (Math.abs(s.length() - noisesPerDot*3) < 2*TOLERANCE) { //If letter space
                     morseMessage += " ";
                 }
-                else if (Math.abs(s.length() - noisesPerDot*7) < TOLERANCE) {//If word space
+                else if (Math.abs(s.length() - noisesPerDot*7) < 12*TOLERANCE) {//If word space
                     morseMessage += "|";
                 }
                 else {

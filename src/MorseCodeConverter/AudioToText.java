@@ -13,7 +13,7 @@ public class AudioToText {
     //50 dot units per word standard (e.g. PARIS)
     private final int DOTS_PER_WORD = 50;
     //Audio samples per second
-    private final double SAMPLE_RATE = 8000;
+    private final double SAMPLE_RATE = 16000;
     //Estimated words per minute
     private final int WPM = 20;
     //words per min * 50 dots per word * 1 min / 60 sec = dots per sec
@@ -23,7 +23,7 @@ public class AudioToText {
     //Estimated number of noises per second
     private final double NOISES_PER_SEC = DOTS_PER_SEC * NOISES_PER_DOT;
     //The threshhold above which the program will recognize noise (max 127 for 8-bit samples)
-    private final int SENSITIVITY = 6;
+    private final int SENSITIVITY = 50;
     private boolean stopped = true;
     
     /**
@@ -54,10 +54,19 @@ public class AudioToText {
         //Instantiate buffer that stores noise data for approx. 300 seconds (5 min)
         AudioAnalysisBuffer noiseBuffer = new AudioAnalysisBuffer(secPerNoise,(int)NOISES_PER_SEC*300);
         
+        
+        boolean isFirstByte = true;
         while (!stopped) {
-            //Fill the noise buffer with samples from the line.
             int totalBytesRead = 0;
             int remainingBytes = noise.length;
+            //Only starts collecting data when starts playing sound
+            if (isFirstByte) {
+                noise[0] = listenForFirstByte(line);
+               totalBytesRead++;
+               remainingBytes--;
+               isFirstByte = false;
+            }
+            //Fill the noise buffer with samples from the line
             while ((remainingBytes > 0) && !stopped) {
                 int numBytesRead = line.read(noise, totalBytesRead, remainingBytes);
                 totalBytesRead += numBytesRead;
@@ -91,6 +100,37 @@ public class AudioToText {
     public boolean isStopped() {
         return stopped;
     }
+    
+    /**
+     * Read audio samples from the line, not capturing data until the sound is
+     * above the sensitivity threshold. Return that first byte.
+     * @param line
+     * @return 
+     */
+    private byte listenForFirstByte(TargetDataLine line) {
+        byte firstByte = 0;
+        byte[] buff = new byte[10];
+        while (!stopped) {
+            int remainingBytes = buff.length;
+            int totalBytesRead = 0;
+            while ((remainingBytes > 0) && !stopped) {
+                int numBytesRead;
+                numBytesRead = line.read(buff, totalBytesRead, remainingBytes);
+                totalBytesRead += numBytesRead;
+                remainingBytes -= numBytesRead;
+            }
+            int byteSum = 0;
+            for (byte b: buff) {
+                byteSum += Math.abs(b);
+            }
+            int byteAvg = byteSum/buff.length;
+            if (byteAvg > SENSITIVITY) {
+                firstByte = (byte)byteAvg;
+                break;
+            }
+        }
+        return firstByte;
+    }
 
 /**
      * Listens for audio samples, captures groups of those samples ("noises"), 
@@ -122,10 +162,18 @@ public class AudioToText {
         //Instantiate buffer that stores noise data for 300 seconds (5 min)
         AudioAnalysisBuffer noiseBuffer = new AudioAnalysisBuffer(secPerNoise, (int)noisesPerSec*300);
         
+        boolean isFirstByte = true;
         while (!stopped) {
-            //Fill the noise buffer with samples from the line.
             int totalBytesRead = 0;
             int remainingBytes = noise.length;
+            //Only starts collecting data when starts playing sound
+            if (isFirstByte) {
+                noise[0] = listenForFirstByte(line);
+               totalBytesRead++;
+               remainingBytes--;
+               isFirstByte = false;
+            }
+            //Fill the noise buffer with samples from the line
             while ((remainingBytes > 0) && !stopped) {
                 int numBytesRead = line.read(noise, totalBytesRead, remainingBytes);
                 totalBytesRead += numBytesRead;
