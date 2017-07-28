@@ -14,20 +14,23 @@ class WPMProcessor extends SwingWorker<Void, Integer> {
 
     private final JSpinner WPMSpinner;
     private final JButton startButton;
+    private final JButton stopButton;
     private final AudioToText atm;
     private final JFrame converterWindow;
     Exception exception = null;
     
-    public WPMProcessor(JFrame converterWindow, JButton startButton, JSpinner WPMSpinner, AudioToText atm) {
+    public WPMProcessor(JFrame converterWindow, JButton startButton, JButton stopButton, JSpinner WPMSpinner, AudioToText atm) {
         this.startButton = startButton;
         this.WPMSpinner = WPMSpinner;
         this.atm = atm;
         this.converterWindow = converterWindow;
+        this.stopButton = stopButton;
+        this.startButton.setEnabled(false);
+        this.stopButton.setEnabled(true);
     }
 
     @Override
     protected Void doInBackground() {
-        startButton.setEnabled(false);
         try {
             atm.captureAudio(this);
         }
@@ -45,6 +48,7 @@ class WPMProcessor extends SwingWorker<Void, Integer> {
     @Override
     protected void done() {
         startButton.setEnabled(true);
+        stopButton.setEnabled(false);
         if (exception instanceof LineUnavailableException) {
             JOptionPane.showMessageDialog(converterWindow, "Unable to access audio line. Please try again", "Audio Unavailable", JOptionPane.ERROR_MESSAGE);
         }

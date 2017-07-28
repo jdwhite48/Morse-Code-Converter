@@ -206,38 +206,34 @@ public class AudioToTextWindow extends javax.swing.JFrame {
         }
         att.setStopped(false);
         //Start button disabled by SwingWorker wpmp until finished executing.
-        wpmp = new WPMProcessor(this, startWPMGuessButton, WPMSpinner, att);
+        wpmp = new WPMProcessor(this, startWPMGuessButton, stopWPMGuessButton, WPMSpinner, att);
         wpmp.execute();
-        stopWPMGuessButton.setEnabled(true);
     }//GEN-LAST:event_startWPMGuessButtonActionPerformed
 
     private void stopWPMGuessButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopWPMGuessButtonActionPerformed
         att.setStopped(true); //Stops the data collection
-        stopWPMGuessButton.setEnabled(false);
         startInterpretingButton.setEnabled(true);
     }//GEN-LAST:event_stopWPMGuessButtonActionPerformed
 
     private void startInterpretingButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_startInterpretingButtonActionPerformed
-        outputArea.setText(""); //Clear any previous text
         if ((int)WPMSpinner.getValue() == 0) {
             JOptionPane.showMessageDialog(this, "Must have a non-zero words-per-minute value. If the message speed in WPM is unknown,\nuse \"Start Guessing\" and play a sample to estimate it.", "Zero WPM Error", JOptionPane.ERROR_MESSAGE);
         }
         else {
+            outputArea.setText(""); //Clear any previous text
             startWPMGuessButton.setEnabled(false);//Disable to prevent 2 simultaneous lines
 
             if (att == null) {
                 att = new AudioToText();
             }
             att.setStopped(false);
-            attp = new AudioToTextProcessor(this, startInterpretingButton, WPMSpinner, outputArea, att);
+            attp = new AudioToTextProcessor(this, startInterpretingButton, stopInterpretingButton, WPMSpinner, outputArea, att);
             attp.execute(); 
-            stopInterpretingButton.setEnabled(true);
         }
     }//GEN-LAST:event_startInterpretingButtonActionPerformed
 
     private void stopInterpretingButtonActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_stopInterpretingButtonActionPerformed
         att.setStopped(true);
-        stopInterpretingButton.setEnabled(false);
         startWPMGuessButton.setEnabled(true);
     }//GEN-LAST:event_stopInterpretingButtonActionPerformed
 

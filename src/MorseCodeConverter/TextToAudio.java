@@ -1,5 +1,6 @@
 package MorseCodeConverter;
 
+import static MorseCodeConverter.PlaySoundUtils.SAMPLE_RATE;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.sound.sampled.*;
@@ -82,19 +83,21 @@ public class TextToAudio {
             
             throw new InvalidTransmissionException();
         }
-            
+        AudioFormat af = new AudioFormat(SAMPLE_RATE, 8, 1, true, false); //Sample rate, sample size, channels, signed, bigEndian
+        SourceDataLine line = AudioSystem.getSourceDataLine(af);
+        line.open(af);
         char[] morseChars = msg.toCharArray();
         for (char c: morseChars) {
             if (ttap == null) {
                 switch (c) {
                     case '.':
                         System.out.print(".");
-                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume);
+                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume, line);
                         Thread.sleep(dotSpacing);
                         break;
                     case '-':
                         System.out.print("-");
-                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume);
+                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume, line);
                         Thread.sleep(dotSpacing);
                         break;
                     case ' ':
@@ -118,12 +121,12 @@ public class TextToAudio {
                 switch (c) {
                     case '.':
                         ttap.outputText(".");
-                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume);
+                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume, line);
                         Thread.sleep(dotSpacing);
                         break;
                     case '-':
                         ttap.outputText("-");
-                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume);
+                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume, line);
                         Thread.sleep(dotSpacing);
                         break;
                     case ' ':
@@ -143,7 +146,7 @@ public class TextToAudio {
                         break;
                 }
             }
-            System.out.flush();
         }
+        line.close();
     }
 }

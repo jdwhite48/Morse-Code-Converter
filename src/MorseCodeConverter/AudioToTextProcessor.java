@@ -11,17 +11,21 @@ import javax.swing.*;
 public class AudioToTextProcessor extends SwingWorker<Void, String>{
     private final JFrame converterWindow;
     private final JButton startButton;
+    private final JButton stopButton;
     private final JTextArea outputText;
     private final AudioToText att;
     private final int WPM;
     Exception exception = null;
     
-    public AudioToTextProcessor(JFrame converterWindow, JButton startButton, JSpinner WPMSpinner, JTextArea outputText, AudioToText att) {
+    public AudioToTextProcessor(JFrame converterWindow, JButton startButton, JButton stopButton, JSpinner WPMSpinner, JTextArea outputText, AudioToText att) {
         this.converterWindow = converterWindow;
         this.startButton = startButton;
+        this.stopButton = stopButton;
         this.outputText = outputText;
         this.att = att;
         WPM = (int)WPMSpinner.getValue();
+        this.startButton.setEnabled(false);
+        this.stopButton.setEnabled(true);
     }
     
     /**
@@ -31,7 +35,6 @@ public class AudioToTextProcessor extends SwingWorker<Void, String>{
      */
     @Override
     protected Void doInBackground() {
-        startButton.setEnabled(false);
         try {
             att.captureAudio(this, WPM);
         }
@@ -49,6 +52,7 @@ public class AudioToTextProcessor extends SwingWorker<Void, String>{
     @Override
     protected void done() {
         startButton.setEnabled(true);
+        stopButton.setEnabled(false);
         if (exception instanceof LineUnavailableException) {
             JOptionPane.showMessageDialog(converterWindow, "Unable to access audio line. Please try again", "Audio Unavailable", JOptionPane.ERROR_MESSAGE);
         }

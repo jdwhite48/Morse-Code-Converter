@@ -10,20 +10,21 @@ import javax.sound.sampled.*;
 
 public class AudioToText {
     
+    //Audio samples per second
+    private final double SAMPLE_RATE = 8000;
+    //The threshhold above which the program will recognize noise (max 127 for 8-bit samples)
+    private final int SENSITIVITY = 12;
+
+    //Estimated noises per dot for 20 WPM (a "noise" is a group of audio samples)
+    private final int NOISES_PER_DOT = 10;
     //50 dot units per word standard (e.g. PARIS)
     private final int DOTS_PER_WORD = 50;
-    //Audio samples per second
-    private final double SAMPLE_RATE = 16000;
     //Estimated words per minute
     private final int WPM = 20;
     //words per min * 50 dots per word * 1 min / 60 sec = dots per sec
     private final int DOTS_PER_SEC = WPM * DOTS_PER_WORD / 60;
-    //Estimated noises per dot (a "noise" is a group of audio samples)
-    private final int NOISES_PER_DOT = 12;
     //Estimated number of noises per second
     private final double NOISES_PER_SEC = DOTS_PER_SEC * NOISES_PER_DOT;
-    //The threshhold above which the program will recognize noise (max 127 for 8-bit samples)
-    private final int SENSITIVITY = 50;
     private boolean stopped = true;
     
     /**
@@ -62,9 +63,9 @@ public class AudioToText {
             //Only starts collecting data when starts playing sound
             if (isFirstByte) {
                 noise[0] = listenForFirstByte(line);
-               totalBytesRead++;
-               remainingBytes--;
-               isFirstByte = false;
+                totalBytesRead++;
+                remainingBytes--;
+                isFirstByte = false;
             }
             //Fill the noise buffer with samples from the line
             while ((remainingBytes > 0) && !stopped) {
@@ -102,14 +103,14 @@ public class AudioToText {
     }
     
     /**
-     * Read audio samples from the line, not capturing data until the sound is
-     * above the sensitivity threshold. Return that first byte.
+     * Read a group of audio samples (i.e. bytes) from the line, not capturing data until the bytes avg
+     * above the sensitivity threshold. Return the avg of that group of bytes.
      * @param line
      * @return 
      */
     private byte listenForFirstByte(TargetDataLine line) {
-        byte firstByte = 0;
-        byte[] buff = new byte[10];
+        byte avgByte = 0;
+        byte[] buff = new byte[15];
         while (!stopped) {
             int remainingBytes = buff.length;
             int totalBytesRead = 0;
@@ -125,11 +126,11 @@ public class AudioToText {
             }
             int byteAvg = byteSum/buff.length;
             if (byteAvg > SENSITIVITY) {
-                firstByte = (byte)byteAvg;
+                avgByte = (byte)byteAvg;
                 break;
             }
         }
-        return firstByte;
+        return avgByte;
     }
 
 /**
@@ -139,6 +140,7 @@ public class AudioToText {
      * text 
      * 
      * @param attp
+     * @param WPM The words-per-minute that the message has been determined to play at.
      * @throws LineUnavailableException 
      */
     public void captureAudio(AudioToTextProcessor attp, int WPM) throws LineUnavailableException {
@@ -153,51 +155,94 @@ public class AudioToText {
             throw e;
         }
         line.start();
-        //Different than class variable if WPM != 20;
-        double noisesPerSec = WPM * NOISES_PER_DOT * DOTS_PER_WORD / 60;
-        //A "noise" will be a number of bytes (1 sample = 8 bits = 1 byte)
-        byte[] noise = new byte[(int)(SAMPLE_RATE / noisesPerSec)];
-        //The time it takes to fill the "noise" array.
-        double secPerNoise = 1 / noisesPerSec;
-        //Instantiate buffer that stores noise data for 300 seconds (5 min)
-        AudioAnalysisBuffer noiseBuffer = new AudioAnalysisBuffer(secPerNoise, (int)noisesPerSec*300);
+        //(60 sec/min) / (WPM words/min)*(50 dot/word) = 1.2 / WPM sec/dot
+        double secPerDot = 60.0 / (DOTS_PER_WORD * WPM);
+        //(1.2 / WPM sec/dot) * SAMPLE_RATE bytes/sec = 1.2 * SAMPLE_RATE/WPM byte/dot
+        double bytesPerDot = SAMPLE_RATE * secPerDot;
+        //bytes that make up a dot unit (1 sample = 8 bits = 1 byte)
+        byte[] dotUnit = new byte[(int)bytesPerDot];
+        
+        //String that will contain "." if noise and " " if not, each character representing a dot unit in length.
+        String audioMessage = "";
         
         boolean isFirstByte = true;
         while (!stopped) {
             int totalBytesRead = 0;
-            int remainingBytes = noise.length;
-            //Only starts collecting data when starts playing sound
+            int remainingBytes = dotUnit.length;
+            //Only start collecting data when sound starts playing
             if (isFirstByte) {
-                noise[0] = listenForFirstByte(line);
-               totalBytesRead++;
-               remainingBytes--;
-               isFirstByte = false;
+                dotUnit[0] = listenForFirstByte(line);
+                totalBytesRead++;
+                remainingBytes--;
+                isFirstByte = false;
             }
-            //Fill the noise buffer with samples from the line
+            //Make sure the byte array has been filled.
             while ((remainingBytes > 0) && !stopped) {
-                int numBytesRead = line.read(noise, totalBytesRead, remainingBytes);
+                int numBytesRead = line.read(dotUnit, totalBytesRead, remainingBytes);
                 totalBytesRead += numBytesRead;
                 remainingBytes -= numBytesRead;
             }
-            //Find on average how loud the "noise" was
+            //Find on average how loud the audio was within the dotUnit
             int byteSum = 0;
-            for (byte b: noise) {
+            for (byte b: dotUnit) {
                 byteSum += Math.abs(b);
             }
-            int byteAvg = byteSum/noise.length;
-            //Determine whether each "noise" is loud enough & store in buffer
+            int byteAvg = byteSum/dotUnit.length;
+            //Determine whether each dot unit is loud enough to be considered a sound
             if (byteAvg > SENSITIVITY) {
-                noiseBuffer.add(true);
+                audioMessage += ".";
             }
             else {
-                noiseBuffer.add(false);
+                audioMessage += " ";
             }
             //While loop ends when another thread (AudioToTextWindow) calls setStopped(true);
         }
         line.stop();
         line.drain();
         line.close();
-        String morseMessage = noiseBuffer.getMorse(WPM);
+        System.out.println(audioMessage);
+        String morseMessage = "";
+        
+        String[] tonesAndSpaces = audioMessage.split("((?<= )(?=\\.))|((?<=\\.)(?= ))");
+        for (String s: tonesAndSpaces) {
+            if (s.matches("\\.+")) { //If tone
+                switch (s.length()) {
+                    case 1:
+                        //If dot
+                        morseMessage += ".";
+                        break;
+                    case 3:
+                        //If dash
+                        morseMessage += "-";
+                        break;
+                    default:
+                        System.out.println("Not a tone:" + "\"" + s + "\"");
+                        break;
+                }
+            }
+            else if (s.matches(" +")) { //If space
+                switch (s.length()) {
+                    case 1:
+                        //If space between tones
+                        morseMessage += "_";
+                        break;
+                    case 3:
+                        //If space between letters
+                        morseMessage += " ";
+                        break;
+                    case 7:
+                        //If space between words
+                        morseMessage += "|";
+                        break;
+                    default:
+                        System.out.println("Not a space:" + "\"" + s + "\"");
+                        break;
+                }
+            }
+            else {
+                System.out.println("Not a tone or space:" + "\"" + s + "\"");
+            }
+        }
         attp.outputText(morseMessage);
     }
 }
