@@ -86,32 +86,33 @@ public class TextToAudio {
         AudioFormat af = new AudioFormat(SAMPLE_RATE, 8, 1, true, false); //Sample rate, sample size, channels, signed, bigEndian
         SourceDataLine line = AudioSystem.getSourceDataLine(af);
         line.open(af);
+        line.start();
         char[] morseChars = msg.toCharArray();
         for (char c: morseChars) {
             if (ttap == null) {
                 switch (c) {
                     case '.':
                         System.out.print(".");
-                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume, line);
-                        Thread.sleep(dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume, line);                    
+                        PlaySoundUtils.tone(DOT_FREQ, dotSpacing, 0, line);                     
                         break;
                     case '-':
                         System.out.print("-");
-                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume, line);
-                        Thread.sleep(dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume, line);                     
+                        PlaySoundUtils.tone(DOT_FREQ, dotSpacing, 0, line);                     
                         break;
                     case ' ':
                         System.out.print(" ");
-                        Thread.sleep(letterSpacing - dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, letterSpacing - dotSpacing, 0, line);                      
                         //Because there's a space after every dot or dash, it has to be taken baack out
                         break;
                     case '|':
                         System.out.print("|");
-                        Thread.sleep(wordSpacing - dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, wordSpacing - dotSpacing, 0, line);                       
                         break;
                     case '/':
                         System.out.print("/");
-                        Thread.sleep(wordSpacing - dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, wordSpacing - dotSpacing, 0, line);                        
                         break;
                     default:
                         break;
@@ -120,33 +121,34 @@ public class TextToAudio {
             else {
                 switch (c) {
                     case '.':
-                        ttap.outputText(".");
-                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume, line);
-                        Thread.sleep(dotSpacing);
+                        ttap.outputText(".");                       
+                        PlaySoundUtils.tone(DOT_FREQ, dotLength, volume, line);                      
+                        PlaySoundUtils.tone(DOT_FREQ, dotSpacing, 0, line);
                         break;
                     case '-':
                         ttap.outputText("-");
-                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume, line);
-                        Thread.sleep(dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, dashLength, volume, line);                       
+                        PlaySoundUtils.tone(DOT_FREQ, dotSpacing, 0, line);                       
                         break;
                     case ' ':
                         ttap.outputText(" ");
-                        Thread.sleep(letterSpacing - dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, letterSpacing - dotSpacing, 0, line);                        
                         //Because there's a space after every dot or dash, it has to be taken baack out
                         break;
                     case '|':
                         ttap.outputText("|");
-                        Thread.sleep(wordSpacing - dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, wordSpacing - dotSpacing, 0, line);                        
                         break;
                     case '/':
                         ttap.outputText("/");
-                        Thread.sleep(wordSpacing - dotSpacing);
+                        PlaySoundUtils.tone(DOT_FREQ, wordSpacing - dotSpacing, 0, line);                        
                         break;
                     default:
                         break;
                 }
             }
         }
+        line.stop();
         line.close();
     }
 }
